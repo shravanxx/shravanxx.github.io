@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rock · Paper · Scissors</title>
+<h2>Created by shravan</h2>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --panel: #12121a;
+    --border: #2a2a3a;
+    --neon-yellow: #f5e642;
+    --neon-cyan: #42e8f5;
+    --neon-pink: #f542c8;
+    --win: #42f57e;
+    --lose: #f54242;
+    --tie: #f5e642;
+    --text: #e8e8f0;
+    --muted: #6a6a8a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 2rem 1rem 3rem;
+    overflow-x: hidden;
+  }
+
+  /* scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.07) 2px,
+      rgba(0,0,0,0.07) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* grid background */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(66,232,245,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(66,232,245,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 700px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+  }
+
+  .header h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(14px, 3vw, 20px);
+    color: var(--neon-yellow);
+    text-shadow: 0 0 20px rgba(245,230,66,0.6), 0 0 40px rgba(245,230,66,0.3);
+    letter-spacing: 2px;
+    line-height: 1.6;
+  }
+
+  .header .sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  /* SCOREBOARD */
+  .scoreboard {
+    display: flex;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .score-cell {
+    flex: 1;
+    background: var(--panel);
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .score-cell .label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .score-cell .val {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 22px;
+  }
+
+  #score-you { color: var(--neon-cyan); text-shadow: 0 0 12px rgba(66,232,245,0.5); }
+  #score-ties { color: var(--neon-yellow); text-shadow: 0 0 12px rgba(245,230,66,0.4); }
+  #score-comp { color: var(--neon-pink); text-shadow: 0 0 12px rgba(245,66,200,0.5); }
+
+  /* ARENA */
+  .arena {
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    min-height: 220px;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .arena::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(66,232,245,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .fight-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    width: 100%;
+  }
+
+  .fighter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .fighter-label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .fighter-emoji {
+    font-size: 72px;
+    line-height: 1;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+    filter: drop-shadow(0 0 16px rgba(255,255,255,0.1));
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+
+  .fighter-choice {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    min-height: 20px;
+    color: var(--text);
+  }
+
+  .vs-badge {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* RESULT BANNER */
+  .result-banner {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(14px, 3vw, 18px);
+    letter-spacing: 1px;
+    text-align: center;
+    min-height: 28px;
+    transition: all 0.3s;
+    opacity: 0;
+  }
+
+  .result-banner.show { opacity: 1; }
+  .result-banner.win  { color: var(--win);  text-shadow: 0 0 20px rgba(66,245,126,0.6); }
+  .result-banner.lose { color: var(--lose); text-shadow: 0 0 20px rgba(245,66,66,0.6); }
+  .result-banner.tie  { color: var(--tie);  text-shadow: 0 0 20px rgba(245,230,66,0.5); }
+
+  /* CHOICE BUTTONS */
+  .choices {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .choice-btn {
+    flex: 1;
+    max-width: 180px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .choice-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .choice-btn:hover {
+    transform: translateY(-3px);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 20px rgba(66,232,245,0.15), 0 4px 20px rgba(0,0,0,0.4);
+    background: rgba(66,232,245,0.05);
+  }
+
+  .choice-btn:active { transform: translateY(0); }
+
+  .choice-btn .btn-emoji { font-size: 40px; line-height: 1; }
+  .choice-btn .btn-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .choice-btn:hover .btn-label { color: var(--neon-cyan); }
+
+  /* HISTORY */
+  .history-section {
+    width: 100%;
+  }
+
+  .history-title {
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+
+  .history-list::-webkit-scrollbar { width: 4px; }
+  .history-list::-webkit-scrollbar-track { background: var(--panel); }
+  .history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    animation: slideIn 0.25s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .history-item .hi-round { color: var(--muted); font-size: 11px; min-width: 50px; }
+  .history-item .hi-moves { flex: 1; letter-spacing: 1px; }
+  .history-item .hi-result { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }
+  .history-item.win .hi-result  { color: var(--win);  }
+  .history-item.lose .hi-result { color: var(--lose); }
+  .history-item.tie .hi-result  { color: var(--tie);  }
+
+  .no-history {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 0;
+  }
+
+  /* RESET */
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 10px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .reset-btn:hover { border-color: var(--neon-pink); color: var(--neon-pink); }
+
+  /* SHAKE ANIMATION */
+  @keyframes shake {
+    0%,100% { transform: rotate(0deg) scale(1); }
+    20%      { transform: rotate(-10deg) scale(1.1); }
+    40%      { transform: rotate(10deg)  scale(1.15); }
+    60%      { transform: rotate(-8deg)  scale(1.12); }
+    80%      { transform: rotate(6deg)   scale(1.1); }
+  }
+
+  .shaking { animation: shake 0.5s ease; }
+
+  @keyframes pop {
+    0%   { transform: scale(0.6); opacity: 0; }
+    70%  { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .popping { animation: pop 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>ROCK<br>PAPER<br>SCISSORS</h1>
+    <div class="sub">Choose your move</div>
+  </div>
+
+  <!-- Scoreboard -->
+  <div class="scoreboard">
+    <div class="score-cell">
+      <div class="label">You</div>
+      <div class="val" id="score-you">0</div>
+    </div>
+    <div class="score-cell">
+      <div class="label">Ties</div>
+      <div class="val" id="score-ties">0</div>
+    </div>
+    <div class="score-cell">
+      <div class="label">Computer</div>
+      <div class="val" id="score-comp">0</div>
+    </div>
+  </div>
+
+  <!-- Arena -->
+  <div class="arena">
+    <div class="fight-row">
+      <div class="fighter">
+        <div class="fighter-label">You</div>
+        <div class="fighter-emoji" id="you-emoji">❓</div>
+        <div class="fighter-choice" id="you-choice">—</div>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="fighter">
+        <div class="fighter-label">Computer</div>
+        <div class="fighter-emoji" id="comp-emoji">❓</div>
+        <div class="fighter-choice" id="comp-choice">—</div>
+      </div>
+    </div>
+    <div class="result-banner" id="result-banner">Pick a move!</div>
+  </div>
+
+  <!-- Choice Buttons -->
+  <div class="choices">
+    <button class="choice-btn" onclick="play('rock')">
+      <span class="btn-emoji">🪨</span>
+      <span class="btn-label">Rock</span>
+    </button>
+    <button class="choice-btn" onclick="play('paper')">
+      <span class="btn-emoji">📄</span>
+      <span class="btn-label">Paper</span>
+    </button>
+    <button class="choice-btn" onclick="play('scissor')">
+      <span class="btn-emoji">✂️</span>
+      <span class="btn-label">Scissor</span>
+    </button>
+  </div>
+
+  <!-- History -->
+  <div class="history-section">
+    <div class="history-title">Match History</div>
+    <div class="history-list" id="history-list">
+      <div class="no-history" id="no-history">No rounds played yet</div>
+    </div>
+  </div>
+
+  <!-- Reset -->
+  <button class="reset-btn" onclick="resetGame()">↺ Reset Game</button>
+
+</div>
+
+<script>
+  // ── Exact logic from your Python program ──────────────────────────────────
+  const Total_condition = ["rock", "paper", "scissor"];
+
+  const emojis = { rock: "🪨", paper: "📄", scissor: "✂️" };
+
+  let scores = { you: 0, ties: 0, comp: 0 };
+  let round = 0;
+  let history = [];
+  let playing = false;
+
+  function getResult(user_input, comp_input) {
+    // Direct port of the Python if/elif logic
+    if (user_input === comp_input) {
+      return "Tie";
+    } else if (user_input === "rock") {
+      if (comp_input === "paper") return "computer win";
+      else return "You win";
+    } else if (user_input === "scissor") {
+      if (comp_input === "paper") return "You win";
+      else return "computer win";
+    } else if (user_input === "paper") {
+      if (comp_input === "scissor") return "computer win";
+      else return "You win";
+    }
+  }
+
+  function play(user_input) {
+    if (playing) return;
+    playing = true;
+
+    const comp_input = Total_condition[Math.floor(Math.random() * Total_condition.length)];
+    const result = getResult(user_input, comp_input);
+    round++;
+
+    // Animate: shake then reveal
+    const youEl   = document.getElementById("you-emoji");
+    const compEl  = document.getElementById("comp-emoji");
+
+    // Reset classes
+    youEl.classList.remove("popping","shaking");
+    compEl.classList.remove("popping","shaking");
+    youEl.textContent  = "✊";
+    compEl.textContent = "✊";
+    document.getElementById("you-choice").textContent  = "...";
+    document.getElementById("comp-choice").textContent = "...";
+
+    const banner = document.getElementById("result-banner");
+    banner.className = "result-banner";
+    banner.textContent = "Choosing...";
+
+    // Shake both hands
+    void youEl.offsetWidth;
+    void compEl.offsetWidth;
+    youEl.classList.add("shaking");
+    compEl.classList.add("shaking");
+
+    setTimeout(() => {
+      // Reveal
+      youEl.classList.remove("shaking");
+      compEl.classList.remove("shaking");
+      youEl.textContent  = emojis[user_input];
+      compEl.textContent = emojis[comp_input];
+      youEl.classList.add("popping");
+      compEl.classList.add("popping");
+
+      document.getElementById("you-choice").textContent  = user_input.toUpperCase();
+      document.getElementById("comp-choice").textContent = comp_input.toUpperCase();
+
+      // Update scores & banner
+      let cls, label;
+      if (result === "Tie") {
+        scores.ties++;
+        cls = "tie"; label = "TIE!";
+      } else if (result === "You win") {
+        scores.you++;
+        cls = "win"; label = "YOU WIN!";
+      } else {
+        scores.comp++;
+        cls = "lose"; label = "COMPUTER WINS!";
+      }
+
+      banner.textContent = label;
+      banner.className = `result-banner show ${cls}`;
+
+      document.getElementById("score-you").textContent  = scores.you;
+      document.getElementById("score-ties").textContent = scores.ties;
+      document.getElementById("score-comp").textContent = scores.comp;
+
+      // Add to history
+      addHistory(round, user_input, comp_input, result, cls);
+      playing = false;
+    }, 520);
+  }
+
+  function addHistory(r, you, comp, result, cls) {
+    document.getElementById("no-history")?.remove();
+    const list = document.getElementById("history-list");
+    const item = document.createElement("div");
+    item.className = `history-item ${cls}`;
+    const label = cls === "win" ? "You won" : cls === "lose" ? "CPU won" : "Tie";
+    item.innerHTML = `
+      <span class="hi-round">R${r}</span>
+      <span class="hi-moves">${emojis[you]} ${you} &nbsp;vs&nbsp; ${comp} ${emojis[comp]}</span>
+      <span class="hi-result">${label}</span>
+    `;
+    list.insertBefore(item, list.firstChild);
+  }
+
+  function resetGame() {
+    scores = { you: 0, ties: 0, comp: 0 };
+    round = 0;
+    playing = false;
+    document.getElementById("score-you").textContent  = "0";
+    document.getElementById("score-ties").textContent = "0";
+    document.getElementById("score-comp").textContent = "0";
+    document.getElementById("you-emoji").textContent  = "❓";
+    document.getElementById("comp-emoji").textContent = "❓";
+    document.getElementById("you-choice").textContent  = "—";
+    document.getElementById("comp-choice").textContent = "—";
+    const banner = document.getElementById("result-banner");
+    banner.className = "result-banner";
+    banner.textContent = "Pick a move!";
+    const list = document.getElementById("history-list");
+    list.innerHTML = '<div class="no-history" id="no-history">No rounds played yet</div>';
+  }
+</script>
+</body>
+</html>
