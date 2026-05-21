@@ -46,7 +46,7 @@ document.querySelectorAll('section[id]').forEach(s => sectionObserver.observe(s)
 
 // 5. TYPEWRITER
 const typeEl  = document.getElementById('typewriter');
-const phrases = ['Full Stack Developer','CS Student','Open Source Enthusiast','Problem Solver'];
+const phrases = ['Im Shravan','DS Student','Learner','Problem Solver'];
 let phraseIdx = 0, charIdx = 0, deleting = false, delay = 110;
 function typeLoop() {
   const current = phrases[phraseIdx];
